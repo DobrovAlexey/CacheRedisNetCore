@@ -169,49 +169,37 @@ namespace CacheRedisNetCore.Controllers
         //    }
         //}
 
-        //public async Task<Product> GetProductById(int id)
-        //{
-        //    // Define a unique key for this method and its parameters.
-        //    //var tableKey = "GetProductById";
-        //    var key = $"Product:{id}";
+        [Route("{id}")]
+        public async Task<Product> GetProductById(int id)
+        {
+            // Define a unique key for this method and its parameters.
+            var key = $"Product:{id}";
 
-        //    // Try to get the entity from the cache.
-        //    var json = await _distributedCache.GetAsync(key).ConfigureAwait(false);
+            // Try to get the entity from the cache.
+            var value = await _redisCacheClient.Db1.GetAsync<Product>(key);
 
-        //    var bytesAsString = json == null ? string.Empty : Encoding.UTF8.GetString(json);
-        //    var value = string.IsNullOrWhiteSpace(bytesAsString)
-        //        ? default(Product)
-        //        : JsonConvert.DeserializeObject<Product>(bytesAsString);
+            if (value == null) // Cache miss
+            {
+                // If there's a cache miss, get the entity from the original store and cache it.
+                // Code has been omitted because it is data store dependent.
+                value = new Product
+                {
+                    Id = id,
+                    Name = "New Book",
+                    Price = 550
+                };
 
-        //    if (value == null) // Cache miss
-        //    {
-        //        // If there's a cache miss, get the entity from the original store and cache it.
-        //        // Code has been omitted because it is data store dependent.
-        //        value = new Product
-        //        {
-        //            Id = 3,
-        //            Name = "New Book",
-        //            Price = 550
-        //        };
+                // Avoid caching a null value.
+                if (value != null)
+                {
+                    // Put the item in the cache with a custom expiration time that
+                    // depends on how critical it is to have stale data.
 
-        //        // Avoid caching a null value.
-        //        if (value != null)
-        //        {
-        //            // Put the item in the cache with a custom expiration time that
-        //            // depends on how critical it is to have stale data.
+                    await _redisCacheClient.Db1.AddAsync(key, value, TimeSpan.FromMinutes(2)).ConfigureAwait(false);
+                }
+            }
 
-        //            var serializeObject = JsonConvert.SerializeObject(value);
-        //            byte[] data = Encoding.UTF8.GetBytes(serializeObject);
-
-        //            await _distributedCache.SetAsync(key, data, new DistributedCacheEntryOptions
-        //            {
-        //                AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(5)
-        //            }).ConfigureAwait(false);
-
-        //        }
-        //    }
-
-        //    return value;
-        //}
+            return value;
+        }
     }
 }
