@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using StackExchange.Redis.Extensions.Core.Abstractions;
@@ -6,7 +7,7 @@ using StackExchange.Redis.Extensions.Core.Abstractions;
 namespace CacheRedisNetCore.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("[controller]/[action]")]
     public class CacheController : ControllerBase
     {
         private readonly IRedisCacheClient _redisCacheClient;
@@ -16,54 +17,104 @@ namespace CacheRedisNetCore.Controllers
             _redisCacheClient = redisCacheClient;
         }
 
-        //[HttpGet]
-        //[Route("Set")]
-        //public async Task<bool> Set()
-        //{
-        //    var product = new Product()
-        //    {
-        //        Id = 1,
-        //        Name = "Book",
-        //        Price = 250
-        //    };
+        public async Task<bool> AddProduct()
+        {
+            var product = new Product
+            {
+                Id = 1,
+                Name = "hand sanitizer",
+                Price = 100
+            };
 
-        //    var serializeObject = JsonConvert.SerializeObject(product);
+            await _redisCacheClient.Db1.AddAsync("Product", product, DateTimeOffset.Now.AddMinutes(10))
+                .ConfigureAwait(false);
 
-        //    byte[] data = Encoding.UTF8.GetBytes(serializeObject);
+            return true;
+        }
 
-        //    await _redisCacheClient.SetAsync("product", data, new DistributedCacheEntryOptions()
-        //    {
-        //        AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(2)
-        //    });
+        public async Task<bool> AddProducts()
+        {
+            var values = new List<Tuple<string, Product>>
+            {
+                new Tuple<string, Product>("Product1", new Product
+                {
+                    Id = 1,
+                    Name = "hand sanitizer 1",
+                    Price = 100
+                }),
+                new Tuple<string, Product>("Product2", new Product
+                {
+                    Id = 2,
+                    Name = "hand sanitizer 2",
+                    Price = 200
+                }),
+                new Tuple<string, Product>("Product3", new Product
+                {
+                    Id = 3,
+                    Name = "hand sanitizer 3",
+                    Price = 300
+                })
+            };
 
-        //    return true;
-        //}
+            await _redisCacheClient.Db1.AddAllAsync(values, DateTimeOffset.Now.AddMinutes(30)).ConfigureAwait(false);
 
+            return true;
+        }
 
-        //[HttpGet]
-        //[Route("Get")]
-        //public async Task<Product> Get()
-        //{
-        //    var timer = Stopwatch.StartNew();
+        public async Task<Product> GetProduct()
+        {
+            var productData = await _redisCacheClient.Db1.GetAsync<Product>("Product");
+            return productData;
+        }
 
-        //    var product = await _redisCacheClient.GetAsync("product");
+        public async Task<IDictionary<string, Product>> GetProducts()
+        {
+            var allKeys = new List<string>
+            {
+                "Product1", "Product2", "Product3"
+            };
 
-        //    timer.Stop();
-        //    Debug.WriteLine($"Get: {timer.Elapsed.Seconds} seconds, {timer.Elapsed.Milliseconds} milliseconds.");
+            var listOfProducts = await _redisCacheClient.Db1.GetAllAsync<Product>(allKeys);
+            return listOfProducts;
+        }
 
-        //    if (product == null)
-        //    {
-        //        return new Product();
-        //    }
+        public async Task<bool> RemoveProduct()
+        {
+            var isRemoved = await _redisCacheClient.Db1.RemoveAsync("Product");
+            return true;
+        }
 
-        //    var bytesAsString = Encoding.UTF8.GetString(product);
-        //    var deserializeObject = JsonConvert.DeserializeObject<Product>(bytesAsString);
+        public async Task<bool> RemoveProducts()
+        {
+            var allKeys = new List<string>
+            {
+                "Product1",
+                "Product2",
+                "Product3"
+            };
 
-        //    return deserializeObject;
-        //}
+            await _redisCacheClient.Db1.RemoveAllAsync(allKeys).ConfigureAwait(false);
+            return true;
+        }
 
-        //[HttpGet]
-        //[Route("HashSet")]
+        public async Task<bool> ExistsProduct()
+        {
+            var isExists = await _redisCacheClient.Db1.ExistsAsync("Product");
+            return isExists;
+        }
+
+        public async Task Search()
+        {
+            // If you want to search all keys that start with 'Product*'
+            var listOfkeys1 = await _redisCacheClient.Db1.SearchKeysAsync("Product*");
+
+            // If you want to search all keys that contain with '*Product*'
+            var listOfkeys2 = await _redisCacheClient.Db1.SearchKeysAsync("*Product*");
+
+            // If you want to search all keys that end with '*Product'
+            var listOfkeys3 = await _redisCacheClient.Db1.SearchKeysAsync("*Product");
+        }
+
         //public async Task HashSet()
         //{
         //    var hashKey = "hashKey";
@@ -118,26 +169,6 @@ namespace CacheRedisNetCore.Controllers
         //    }
         //}
 
-        [HttpGet]
-        [Route("Index")]
-        public async Task<bool> Index()
-        {
-            var product = new Product
-            {
-                Id = 1,
-                Name = "hand sanitizer",
-                Price = 100
-            };
-
-            await _redisCacheClient.Db1.AddAsync("Product", product, DateTimeOffset.Now.AddMinutes(10))
-                .ConfigureAwait(false);
-
-            return true;
-        }
-
-
-        //[HttpGet]
-        //[Route("GetProductById/{id}")]
         //public async Task<Product> GetProductById(int id)
         //{
         //    // Define a unique key for this method and its parameters.
@@ -177,38 +208,6 @@ namespace CacheRedisNetCore.Controllers
         //                AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(5)
         //            }).ConfigureAwait(false);
 
-        //        }
-        //    }
-
-        //    return value;
-        //}
-
-
-        //public async Task<MyEntity> GetMyEntityAsync(int id)
-        //{
-        //    // Define a unique key for this method and its parameters.
-        //    var key = $"MyEntity:{id}";
-        //    var cache = Connection.GetDatabase();
-
-        //    // Try to get the entity from the cache.
-        //    var json = await cache.StringGetAsync(key).ConfigureAwait(false);
-        //    var value = string.IsNullOrWhiteSpace(json)
-        //        ? default(MyEntity)
-        //        : JsonConvert.DeserializeObject<MyEntity>(json);
-
-        //    if (value == null) // Cache miss
-        //    {
-        //        // If there's a cache miss, get the entity from the original store and cache it.
-        //        // Code has been omitted because it is data store dependent.
-        //        value = ...;
-
-        //        // Avoid caching a null value.
-        //        if (value != null)
-        //        {
-        //            // Put the item in the cache with a custom expiration time that
-        //            // depends on how critical it is to have stale data.
-        //            await cache.StringSetAsync(key, JsonConvert.SerializeObject(value)).ConfigureAwait(false);
-        //            await cache.KeyExpireAsync(key, TimeSpan.FromMinutes(DefaultExpirationTimeInMinutes)).ConfigureAwait(false);
         //        }
         //    }
 
