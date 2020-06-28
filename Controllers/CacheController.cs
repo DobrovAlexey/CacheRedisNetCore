@@ -1,13 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Distributed;
-using Newtonsoft.Json;
-using StackExchange.Redis;
 using StackExchange.Redis.Extensions.Core.Abstractions;
 
 namespace CacheRedisNetCore.Controllers
@@ -16,7 +9,8 @@ namespace CacheRedisNetCore.Controllers
     [Route("[controller]")]
     public class CacheController : ControllerBase
     {
-        private IRedisCacheClient _redisCacheClient;
+        private readonly IRedisCacheClient _redisCacheClient;
+
         public CacheController(IRedisCacheClient redisCacheClient)
         {
             _redisCacheClient = redisCacheClient;
@@ -128,7 +122,7 @@ namespace CacheRedisNetCore.Controllers
         [Route("Index")]
         public async Task<bool> Index()
         {
-            var product = new Product()
+            var product = new Product
             {
                 Id = 1,
                 Name = "hand sanitizer",
@@ -188,7 +182,6 @@ namespace CacheRedisNetCore.Controllers
 
         //    return value;
         //}
-
 
 
         //public async Task<MyEntity> GetMyEntityAsync(int id)
