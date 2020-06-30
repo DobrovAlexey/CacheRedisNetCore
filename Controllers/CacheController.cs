@@ -37,7 +37,7 @@ namespace CacheRedisNetCore.Controllers
             return true;
         }
 
-        public async Task<bool> AddProducts()
+        public async Task AddProducts()
         {
             var values = new List<Tuple<string, Product>>
             {
@@ -61,9 +61,7 @@ namespace CacheRedisNetCore.Controllers
                 })
             };
 
-            await _redisCacheClient.Db1.AddAllAsync(values, DateTimeOffset.Now.AddMinutes(30)).ConfigureAwait(false);
-
-            return true;
+            await _redisCacheClient.Db1.AddAllAsync(values, DateTimeOffset.Now.AddMinutes(30));
         }
 
         public async Task<Product> GetProduct()
