@@ -1,5 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using StackExchange.Redis.Extensions.Core.Abstractions;
@@ -115,91 +120,68 @@ namespace CacheRedisNetCore.Controllers
             var listOfkeys3 = await _redisCacheClient.Db1.SearchKeysAsync("*Product");
         }
 
-        //public async Task HashSet()
-        //{
-        //    var hashKey = "hashKey";
-
-        //    HashEntry[] redisBookHash = {
-        //        new HashEntry("title", "Redis for .NET Developers"),
-        //        new HashEntry("year", 2016),
-        //        new HashEntry("author", "Taswar Bhatti")
-        //    };
-
-        //    _redisCacheClient.HashSet(hashKey, redisBookHash);
-
-        //    if (_redisCacheClient.HashExists(hashKey, "year"))
-        //    {
-        //        var year = _redisCacheClient.HashGet(hashKey, "year"); //year is 2016
-        //    }
-
-        //    var allHash = _redisCacheClient.HashGetAll(hashKey);
-
-        //    //get all the items
-        //    foreach (var item in allHash)
-        //    {
-        //        //output 
-        //        //key: title, value: Redis for .NET Developers
-        //        //key: year, value: 2016
-        //        //key: author, value: Taswar Bhatti
-        //        Console.WriteLine(string.Format("key : {0}, value : {1}", item.Name, item.Value));
-        //    }
-
-        //    //get all the values
-        //    var values = _distributedCache.HashValues(hashKey);
-
-        //    foreach (var val in values)
-        //    {
-        //        Console.WriteLine(val); //result = Redis for .NET Developers, 2016, Taswar Bhatti
-        //    }
-
-        //    //get all the keys
-        //    var keys = _distributedCache.HashKeys(hashKey);
-
-        //    foreach (var k in keys)
-        //    {
-        //        Console.WriteLine(k); //result = title, year, author
-        //    }
-
-        //    var len = _distributedCache.HashLength(hashKey);  //result of len is 3
-
-        //    if (_distributedCache.HashExists(hashKey, "year"))
-        //    {
-        //        var year = _distributedCache.HashIncrement(hashKey, "year", 1); //year now becomes 2017
-        //        var year2 = _distributedCache.HashDecrement(hashKey, "year", 1.5); //year now becomes 2015.5
-        //    }
-        //}
-
-        [Route("{id}")]
-        public async Task<Product> GetProductById(int id)
+        public async Task AddMill()
         {
-            // Define a unique key for this method and its parameters.
-            var key = $"Product:{id}";
+            var random = new Random();
 
-            // Try to get the entity from the cache.
-            var value = await _redisCacheClient.Db1.GetAsync<Product>(key);
+            using var sr = new StreamReader(@"words.txt");
+            var strings = (await sr.ReadToEndAsync()).Replace("\r", string.Empty).Split(new[] {'\n'}).ToList();
 
-            if (value == null) // Cache miss
+            for (var i = 0; i < 1000; i++)
             {
-                // If there's a cache miss, get the entity from the original store and cache it.
-                // Code has been omitted because it is data store dependent.
-                value = new Product
-                {
-                    Id = id,
-                    Name = "New Book",
-                    Price = 550
-                };
+                Trace.WriteLine(i);
 
-                // Avoid caching a null value.
-                if (value != null)
-                {
-                    // Put the item in the cache with a custom expiration time that
-                    // depends on how critical it is to have stale data.
+                var values = new List<Tuple<string, Product>>();
 
-                    await _redisCacheClient.Db1.AddAsync(key, value, TimeSpan.FromMinutes(2)).ConfigureAwait(false);
+                for (var j = 0; j < 1000; j++)
+                {
+                    var entity = new Product
+                    {
+                        Id = random.Next(1, int.MaxValue - 1),
+                        Name = string.Join(' ',
+                            strings.GetRange(random.Next(1, strings.Count - 1001), random.Next(10, 1000))),
+                        Price = random.Next(1, int.MaxValue)
+                    };
+
+                    var tuple = new Tuple<string, Product>($"GetProductEntity:{GetPropertyHashFromType(entity)}",
+                        entity);
+
+                    values.Add(tuple);
                 }
-            }
 
-            return value;
+                await _redisCacheClient.Db1.AddAllAsync(values, TimeSpan.FromDays(2));
+
+                values.Clear();
+
+                Trace.WriteLine("successfully add Products ");
+            }
         }
+
+        [HttpPost]
+        public async Task<string> GetProductEntity(Product product)
+        {
+            var hashProp = GetPropertyHashFromType(product);
+            var key = $"GetProductEntity:{hashProp}";
+
+            var value = await _redisCacheClient.Db1.GetAsync<Product>(key);
+            if (value != null) return "Объект находится в кэше.";
+
+            await _redisCacheClient.Db1.AddAsync(key, product, TimeSpan.FromDays(2)).ConfigureAwait(false);
+            return "Объект не найден в кэше.";
+        }
+
+        private static string GetPropertyHashFromType<T>(T value)
+        {
+            var typeProperties = typeof(T).GetProperties().Select(p => p.GetValue(value));
+            var propertiesValues = string.Join(string.Empty, typeProperties);
+
+            using var sha = new SHA256Managed();
+            var textData = Encoding.UTF8.GetBytes(propertiesValues);
+            var hash = sha.ComputeHash(textData);
+            var hashKey = BitConverter.ToString(hash).Replace("-", string.Empty);
+
+            return hashKey;
+        }
+
     }
 }
