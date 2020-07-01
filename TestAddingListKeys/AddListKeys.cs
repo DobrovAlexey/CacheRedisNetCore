@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using CacheRedisNetCore;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using StackExchange.Redis.Extensions.Core.Abstractions;
@@ -43,6 +42,12 @@ namespace TestAddingListKeys
                 new Tuple<string, string>("ProductOneList1", "1"),
                 new Tuple<string, string>("ProductOneList2", "2"),
                 new Tuple<string, string>("ProductOneList3", "3"),
+                new Tuple<string, string>("ProductOneList4", "4"),
+                new Tuple<string, string>("ProductOneList5", "5"),
+                new Tuple<string, string>("ProductOneList6", "6"),
+                new Tuple<string, string>("ProductOneList7", "7"),
+                new Tuple<string, string>("ProductOneList8", "8"),
+                new Tuple<string, string>("ProductOneList9", "9"),
             };
 
             await _redisCacheClient.Db1.AddAllAsync(values, TimeSpan.FromMilliseconds(1));
@@ -52,7 +57,7 @@ namespace TestAddingListKeys
             foreach (var value in values)
             {
                 var exists = await _redisCacheClient.Db1.ExistsAsync(value.Item1);
-                Assert.IsFalse(exists);
+                Assert.IsFalse(exists, value.Item1);
             }
         }
 
@@ -64,6 +69,12 @@ namespace TestAddingListKeys
                 new Tuple<string, string>("ProductManyList1", "1"),
                 new Tuple<string, string>("ProductManyList2", "2"),
                 new Tuple<string, string>("ProductManyList3", "3"),
+                new Tuple<string, string>("ProductManyList4", "4"),
+                new Tuple<string, string>("ProductManyList5", "5"),
+                new Tuple<string, string>("ProductManyList6", "6"),
+                new Tuple<string, string>("ProductManyList7", "7"),
+                new Tuple<string, string>("ProductManyList8", "8"),
+                new Tuple<string, string>("ProductManyList9", "9"),
             };
 
             await _redisCacheClient.Db1.AddAllAsync(valuesOneList, TimeSpan.FromMilliseconds(1));
@@ -73,14 +84,20 @@ namespace TestAddingListKeys
             foreach (var value in valuesOneList)
             {
                 var exists = await _redisCacheClient.Db1.ExistsAsync(value.Item1);
-                Assert.IsFalse(exists);
+                Assert.IsFalse(exists, value.Item1);
             }
 
             var valuesTwoLis = new List<Tuple<string, string>>
             {
-                new Tuple<string, string>("ProductManyList4", "1"),
-                new Tuple<string, string>("ProductManyList5", "2"),
-                new Tuple<string, string>("ProductManyList6", "3"),
+                new Tuple<string, string>("ProductManyList10", "1"),
+                new Tuple<string, string>("ProductManyList11", "2"),
+                new Tuple<string, string>("ProductManyList12", "3"),
+                new Tuple<string, string>("ProductManyList13", "4"),
+                new Tuple<string, string>("ProductManyList14", "5"),
+                new Tuple<string, string>("ProductManyList15", "6"),
+                new Tuple<string, string>("ProductManyList16", "7"),
+                new Tuple<string, string>("ProductManyList17", "8"),
+                new Tuple<string, string>("ProductManyList18", "9"),
             };
 
             await _redisCacheClient.Db1.AddAllAsync(valuesTwoLis, TimeSpan.FromMilliseconds(1));
@@ -90,7 +107,7 @@ namespace TestAddingListKeys
             foreach (var value in valuesTwoLis)
             {
                 var exists = await _redisCacheClient.Db1.ExistsAsync(value.Item1);
-                Assert.IsFalse(exists);
+                Assert.IsFalse(exists, value.Item1);
             }
         }
     }
