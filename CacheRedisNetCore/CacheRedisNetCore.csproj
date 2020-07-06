@@ -5,9 +5,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="StackExchange.Redis.Extensions.AspNetCore" Version="6.3.0" />
-    <PackageReference Include="StackExchange.Redis.Extensions.Core" Version="6.3.0" />
-    <PackageReference Include="StackExchange.Redis.Extensions.Newtonsoft" Version="6.3.0" />
+    <PackageReference Include="StackExchange.Redis.Extensions.AspNetCore" Version="6.3.3" />
+    <PackageReference Include="StackExchange.Redis.Extensions.Core" Version="6.3.3" />
+    <PackageReference Include="StackExchange.Redis.Extensions.Newtonsoft" Version="6.3.3" />
   </ItemGroup>
 
 
